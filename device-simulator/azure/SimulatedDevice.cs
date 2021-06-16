@@ -1,4 +1,8 @@
-﻿using Microsoft.Azure.Devices.Client;
+﻿using IoT.Azure.DeviceSimulator.Provisioning;
+using Microsoft.Azure.Devices.Client;
+using Microsoft.Azure.Devices.Provisioning.Client;
+using Microsoft.Azure.Devices.Provisioning.Client.Transport;
+using Microsoft.Azure.Devices.Shared;
 using System;
 using System.Text;
 using System.Threading;
@@ -8,9 +12,9 @@ namespace IoT.Azure.DeviceSimulator
 {
     public class SimulatedDevice
     {
-        private readonly DeviceCredentials deviceCredentials;
+        private readonly IDeviceCredentials deviceCredentials;
 
-        public SimulatedDevice(DeviceCredentials deviceCredentials)
+        public SimulatedDevice(IDeviceCredentials deviceCredentials)
         {
             this.deviceCredentials = deviceCredentials;
         }
@@ -18,29 +22,28 @@ namespace IoT.Azure.DeviceSimulator
         public async Task Simulate()
         {
             Console.WriteLine("Connecting device client...");
-            using (var deviceClient = DeviceClient.CreateFromConnectionString(deviceCredentials.ConnectionString))
-            {
-                Console.WriteLine("   ... connected");
-                Console.WriteLine("Starting to simulate. Hit enter to stop...");
+            using var deviceClient = await deviceCredentials.Connect();
+            Console.WriteLine("   ... connected");
 
-                var cancellationTokenSource = new CancellationTokenSource();
-                var simulation = Task.Run(() => Simulate(deviceClient, cancellationTokenSource.Token));
-                Console.ReadLine();
-                Console.WriteLine("Stopping...");
-                cancellationTokenSource.Cancel();
-                await simulation;
-            }
+            Console.WriteLine("Starting to simulate. Hit enter to stop...");
+
+            var cancellationTokenSource = new CancellationTokenSource();
+            var simulation = Task.Run(() => Simulate(deviceClient, cancellationTokenSource.Token));
+            Console.ReadLine();
+            Console.WriteLine("Stopping...");
+            cancellationTokenSource.Cancel();
+            await simulation;
             Console.WriteLine("   ...stopped");
         }
 
         private async Task Simulate(DeviceClient deviceClient, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
-            {                
+            {
                 await deviceClient.SendEventAsync(new Message(Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(
                             new
                             {
-                                temperature = 21
+                                temperature = 41
                             }))));
 
                 Console.WriteLine("Message sent");

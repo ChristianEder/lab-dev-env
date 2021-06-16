@@ -2,11 +2,16 @@
 using System;
 using System.Threading.Tasks;
 
-namespace IoT.Azure.DeviceSimulator
+namespace IoT.Azure.DeviceSimulator.Provisioning
 {
     public static class DeviceProvisioning
     {
-        public static async Task<DeviceCredentials> Provision(string deviceId)
+        public static Task<IDeviceCredentials> ProvisionUsingDeviceProvisioningService(string idScope, string registrationId, string primaryKey)
+        {
+            return Task.FromResult<IDeviceCredentials>(new DeviceProvisioningServiceDeviceCredentials(idScope, registrationId, primaryKey)); 
+        }
+
+        public static async Task<IDeviceCredentials> SelfProvisionInIotHub(string deviceId)
         {
             // We use the Azure IoT Device SDK to provision the simulated device and its credentials used for authentication directly from the simulator.
             // When dealing with "real" devices, the provisioning step would typically happen during physical production of the device.
@@ -18,7 +23,7 @@ namespace IoT.Azure.DeviceSimulator
             var registryManager = RegistryManager.CreateFromConnectionString(Constants.IoTHubConnectionString);
 
             var device = await EnsureDeviceExistsInIoTHub(registryManager, deviceId);
-            return new DeviceCredentials(registryManager, device);
+            return new SelfProvisionedDeviceCredentials(registryManager, device);
         }
 
         private static async Task<Device> EnsureDeviceExistsInIoTHub(RegistryManager registryManager, string deviceId)

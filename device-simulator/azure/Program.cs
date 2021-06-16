@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IoT.Azure.DeviceSimulator.Provisioning;
+using System;
 using System.Threading.Tasks;
 
 namespace IoT.Azure.DeviceSimulator
@@ -7,13 +8,20 @@ namespace IoT.Azure.DeviceSimulator
     {
         static async Task<int> Main(string[] args)
         {
-            if (args.Length != 1)
+            IDeviceCredentials deviceCredentials;
+            if (args.Length == 1)
             {
-                Console.Error.WriteLine("You have to start the simulator with the device id as the only argument");
+                deviceCredentials = await DeviceProvisioning.SelfProvisionInIotHub(args[0]);
+            }
+            else if (args.Length == 3)
+            {
+                deviceCredentials = await DeviceProvisioning.ProvisionUsingDeviceProvisioningService(args[0], args[1], args[2]);
+            }
+            else
+            {
+                Console.Error.WriteLine("You have to start the simulator either with the device id as the only argument, or with the id scope, registration id and primary key when using DPS.");
                 return 1;
             }
-
-            var deviceCredentials = await DeviceProvisioning.Provision(args[0]);
 
             var device = new SimulatedDevice(deviceCredentials);
             await device.Simulate();
